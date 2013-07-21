@@ -12,6 +12,11 @@ Your can then start using it using youtube-dl
 
     youtube-dl http://www.youtube.com/watch?v=xjfsmKmK9qc
 
+Video ID detection
+------------------
+
+The parsing tries to be smart about finding out what the video's ID is, you can give it an url, an id, an embed code fragment, ... And it will do its best.
+
 Usage
 -----
 
@@ -25,7 +30,17 @@ Examples:
 
     youtube-dl xjfsmKmK9qc
 
-    youtube-dl -output funny_video.mp4 -quality hd720 -format mp4 xjfsmKmK9qc
+This video has highres and 1080p version, but we can ask for 720p only:
+
+    youtube-dl -quality hd720 9dgSa4wmMzk
+
+This one will fail, as there is no 720p version available for this video
+
+    youtube-dl -output learning_go.mp4 -quality hd720 -format mp4 xjfsmKmK9qc
+
+This, however, will work and download the video in the next best quality (medium)
+
+    youtube-dl -output learning_go.mp4 -quality hd720,max -format mp4 xjfsmKmK9qc
 
 Parameters
 ----------
