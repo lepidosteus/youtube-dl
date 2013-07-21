@@ -10,6 +10,8 @@ import (
 )
 
 var sortedQualities []string = []string{
+	QUALITY_HIGHRES,
+	QUALITY_HD1080,
 	QUALITY_HD720,
 	QUALITY_LARGE,
 	QUALITY_MEDIUM,
@@ -114,8 +116,8 @@ func (cfg *Config) findVideoId() (videoId string, err error) {
 	if strings.ContainsAny(videoId, "?&/<%=") {
 		return videoId, errors.New("invalid characters in video id")
 	}
-	if len(videoId) != 11 {
-		return videoId, errors.New("the video id must be 11 characters long")
+	if len(videoId) < 10 {
+		return videoId, errors.New("the video id must be at least 10 characters long")
 	}
 	return videoId, nil
 }
@@ -164,7 +166,7 @@ func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
 
 // display usage and quit
 func error_usage() {
-	fmt.Println("usage: golang-youtube-dl [-verbose -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
+	fmt.Println("usage: youtube-dl [-verbose -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
 	flag.PrintDefaults()
 	os.Exit(1)
 }

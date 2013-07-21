@@ -88,7 +88,17 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 		}
 		streams = append(streams, stream)
 
-		log("Stream found: quality '%s', format '%s'", stream.getQuality(), stream.getFormat())
+		quality := stream.getQuality()
+		if quality == QUALITY_UNKNOWN {
+			log("Found unknown quality '%s'", stream["quality"])
+		}
+
+		format := stream.getFormat()
+		if format == FORMAT_UNKNOWN {
+			log("Found unknown format '%s'", stream["type"])
+		}
+
+		log("Stream found: quality '%s', format '%s'", quality, format)
 	}
 
 	log("Successfully decoded %d streams", len(streams))

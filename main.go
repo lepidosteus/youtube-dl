@@ -5,6 +5,8 @@ import (
 )
 
 const (
+	QUALITY_HIGHRES = "highres"
+	QUALITY_HD1080 = "hd1080"
 	QUALITY_HD720 = "hd720"
 	QUALITY_LARGE = "large"
 	QUALITY_MEDIUM = "medium"
