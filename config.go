@@ -7,6 +7,7 @@ import (
 	"strings"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 var sortedQualities []string = []string{
@@ -78,6 +79,7 @@ type Config struct {
 	quality *commaStringList
 	format *commaStringList
 	videoId string
+	toMp3 bool
 }
 
 var cfg *Config = &Config{
@@ -93,6 +95,7 @@ var cfg *Config = &Config{
 		sortedFormats,
 	),
 	"",
+	false,
 }
 
 // reads the videoId property and try to find what we need inside
@@ -122,8 +125,15 @@ func (cfg *Config) findVideoId() (videoId string, err error) {
 	return videoId, nil
 }
 
-func (cfg *Config) getOutputPath(stream stream) string {
-	return strings.Replace(cfg.output, "%format%", stream.getFormat(), -1)
+func (cfg *Config) isMp3() bool {
+	return cfg.toMp3
+}
+
+func (cfg *Config) OutputPath(stream stream) (path string) {
+	path = strings.Replace(cfg.output, "%format%", stream.Format(), -1)
+	path = strings.Replace(path, "%title%", stream["title"], -1)
+	path = strings.Replace(path, "%author%", stream["author"], -1)
+	return
 }
 
 func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
@@ -133,7 +143,7 @@ func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
 	valid_streams := streamList{}
 	for _, format := range cfg.format.values {
 		for _, s := range streams {
-			if s.getFormat() == format {
+			if s.Format() == format {
 				valid_streams = append(valid_streams, s)
 			}
 		}
@@ -149,7 +159,7 @@ func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
 	valid_streams = streamList{}
 	for _, quality := range cfg.quality.values {
 		for _, s := range streams {
-			if s.getQuality() == quality {
+			if s.Quality() == quality {
 				valid_streams = append(valid_streams, s)
 			}
 		}
@@ -166,7 +176,7 @@ func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
 
 // display usage and quit
 func error_usage() {
-	fmt.Println("usage: youtube-dl [-verbose -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
+	fmt.Println("usage: youtube-dl [-verbose -mp3 -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
 	flag.PrintDefaults()
 	os.Exit(1)
 }
@@ -175,15 +185,42 @@ func error_usage() {
 func init() {
 	flag.BoolVar(&cfg.verbose, "verbose", false, "if true, various status messages will be shown.")
 
+	flag.BoolVar(&cfg.toMp3, "mp3", false, "if true, the file audio stream will be converted to an mp3 file.")
+
 	flag.BoolVar(&cfg.overwrite, "overwrite", false, "if true, the destination file will be overwritten if it already exists.")
 
-	flag.StringVar(&cfg.output, "output", DEFAULT_DESTINATION, "path where to write the downloaded file, use %format% for dynamic extension depending on format selected (eg: 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected).")
+	flag.StringVar(&cfg.output, "output", "", "path where to write the downloaded file. Use %format% for dynamic extension depending on format selected (eg: -output 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected). %author% and %title% will be replaced by the uploader's name and the video's title, respectively. Use the .mp3 extension to convert the video to an mp3 file on the fly (eg: -ouput 'audio.mp3').")
 
 	flag.Var(cfg.quality, "quality", "comma separated list of desired video quality, in decreasing priority. Use 'max' (or 'min') to automatically select the best (or worst) possible quality available for this video. Allowed values: " + strings.Join(sortedQualities, ", ") + ". Exemple: '-quality hd720,max': select hd720 quality, if not available then select the best quality available.")
 
 	flag.Var(cfg.format, "format", "comma separated list of desired video format, in decreasing priority. Allowed values: " + strings.Join(sortedFormats, ", ") + ".")
 
 	flag.Parse()
+
+	if len(cfg.output) <= 0 {
+		// if no path given, guess one
+
+		if cfg.isMp3() {
+			cfg.output = DEFAULT_DESTINATION_MP3
+		} else {
+			cfg.output = DEFAULT_DESTINATION
+		}
+		log("No output specified, defaulting to '%s'", cfg.output)
+	} else if (filepath.Ext(cfg.output) == ".mp3") {
+		// if a path is given and its for a mp3, make sure to convert
+
+		cfg.toMp3 = true
+		log("Converting video to mp3 due to output parameter")
+	} else if (filepath.Ext(cfg.output) == ".%format%" && cfg.toMp3) {
+		// if a path is given, and its a dynamic extension, and we asked for mp3, change path now
+		cfg.output = cfg.output[:len(cfg.output)-8] + "mp3"
+		log("Replacing output with '%s' due to parameters", cfg.output)
+	} else if (filepath.Ext(cfg.output) != ".mp3" && cfg.toMp3) {
+		// if we ask for mp3 but the output we gave doesn't have it, append it
+
+		cfg.output = cfg.output + ".mp3"
+		log("Replacing output with '%s' due to parameters", cfg.output)
+	}
 
 	log("Configuration:")
 

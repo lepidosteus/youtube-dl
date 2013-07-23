@@ -60,6 +60,12 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 
 	log("Server answered with a success code")
 
+	/*
+	for k, v := range answer {
+		log("%s: %#v", k, v)
+	}
+	*/
+
 	// read the streams map
 
 	stream_map, ok := answer["url_encoded_fmt_stream_map"]
@@ -85,15 +91,17 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			"type": stream_qry["type"][0],
 			"url": stream_qry["url"][0],
 			"sig": stream_qry["sig"][0],
+			"title": answer["title"][0],
+			"author": answer["author"][0],
 		}
 		streams = append(streams, stream)
 
-		quality := stream.getQuality()
+		quality := stream.Quality()
 		if quality == QUALITY_UNKNOWN {
 			log("Found unknown quality '%s'", stream["quality"])
 		}
 
-		format := stream.getFormat()
+		format := stream.Format()
 		if format == FORMAT_UNKNOWN {
 			log("Found unknown format '%s'", stream["type"])
 		}

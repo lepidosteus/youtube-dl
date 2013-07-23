@@ -21,7 +21,8 @@ const (
 	FORMAT_3GP = "3ggp"
 	FORMAT_UNKNOWN = "unknown"
 
-	DEFAULT_DESTINATION = "./video.%format%"
+	DEFAULT_DESTINATION = "./%title%.%format%"
+	DEFAULT_DESTINATION_MP3 = "./%title%.mp3"
 )
 
 func log(format string, params ...interface{}) {
@@ -55,11 +56,42 @@ func main() {
 		return
 	}
 
-	err = stream.download(cfg.getOutputPath(stream), cfg.overwrite)
+	out, err := getWriter(cfg, stream)
+	if err != nil {
+		fmt.Printf("ERROR: unable to create the output writer: %s\n", err)
+		return
+	}
+	defer func() {
+		err = out.Close()
+		if err != nil {
+			fmt.Printf("ERROR: unable to close destination: %s\n", err)
+		}
+	}()
+
+	err = stream.download(out)
 	if err != nil {
 		fmt.Printf("ERROR: unable to download the stream: %s\n", err)
 		return
 	}
 
+	fmt.Printf("Done\n")
+
 	return
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
