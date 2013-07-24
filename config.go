@@ -185,7 +185,7 @@ func error_usage() {
 func init() {
 	flag.BoolVar(&cfg.verbose, "verbose", false, "if true, various status messages will be shown.")
 
-	flag.BoolVar(&cfg.toMp3, "mp3", false, "if true, the file audio stream will be converted to an mp3 file.")
+	flag.BoolVar(&cfg.toMp3, "mp3", false, "if true, the file's audio stream will be converted to an mp3 file.")
 
 	flag.BoolVar(&cfg.overwrite, "overwrite", false, "if true, the destination file will be overwritten if it already exists.")
 

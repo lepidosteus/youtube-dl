@@ -17,10 +17,26 @@ Video ID detection
 
 The parsing tries to be smart about finding out what the video's ID is, you can give it an url, an id, an embed code fragment, ... And it will do its best.
 
+MP3 convertion
+--------------
+
+If ffmpeg is installed, it is possible to extract the audio stream to an mp3 file on the fly. Either pass the -mp3 parameter, or give an output path ending in .mp3
+
+    youtube-dl -mp3 http://www.youtube.com/watch?v=xjfsmKmK9qc
+
+    youtube-dl -output "audio.mp3" http://www.youtube.com/watch?v=xjfsmKmK9qc
+
+Automatic naming
+----------------
+
+If used in the output path, "%author%" and "%title%" will be replaced by their value (respectively the uploader's name and the video's title)
+
+    youtube-dl -output "%title%.mp3" http://www.youtube.com/watch?v=xjfsmKmK9qc
+
 Usage
 -----
 
-    youtube-dl [-verbose -overwrite -output /p/a/t/h -quality list -format list] videoId|url
+    youtube-dl [-verbose -mp3 -overwrite -output /p/a/t/h -quality list -format list] videoId|url
 
 Examples:
 
@@ -62,10 +78,16 @@ Parameters
     <td colspan="4">if true, various status messages will be shown</td>
   </tr>
   <tr>
-    <td>-output VALUE</td><td>./video.%format%</td><td>a valid path</td><td>-output "$HOME/funny_video.%format%"
+    <td>-mp3<br>-mp3=VALUE</td><td>false</td><td>true<br>false</td><td>-mp3</td>
   </tr>
   <tr>
-    <td colspan="4">path where to write the downloaded file, use %format% for dynamic extension depending on format selected (eg: 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected)</td>
+    <td colspan="4">if true, the file's audio stream will be converted to an mp3 file</td>
+  </tr>
+  <tr>
+    <td>-output VALUE</td><td>./video.%format%</td><td>a valid path<br>Tokens:<br>%format%<br>%author%<br>%title%</td><td>-output "$HOME/funny_video.%format%"
+  </tr>
+  <tr>
+    <td colspan="4">path where to write the downloaded file<br>Use %format% for dynamic extension depending on format selected (eg: 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected).<br>%author% and %title% will be replaced by the uploader's name and the video's title, respectively.<br>Use the .mp3 extension to convert the video to an mp3 file on the fly (eg: -ouput 'audio.mp3')</td>
   </tr>
   <tr>
     <td>-quality VALUE[,VALUE...]</td><td>hd720,max</td><td>highres<br>hd1080<br>hd720<br>large<br>medium<br>small<br>min<br>max</td><td>-quality small,min</td>
