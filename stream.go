@@ -5,7 +5,6 @@ import (
 	"strings"
 	"net/http"
 	"io"
-	"errors"
 )
 
 type stream map[string]string
@@ -40,15 +39,15 @@ func (stream stream) download(out io.Writer) error {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return errors.New(fmt.Sprintf("requesting stream: %s", err))
+		return fmt.Errorf("requesting stream: %s", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("reading answer: non 200 status code received: '%s'", err))
+		return fmt.Errorf("reading answer: non 200 status code received: '%s'", err)
 	}
 	length, err := io.Copy(out, resp.Body)
 	if err != nil {
-		return errors.New(fmt.Sprintf("saving file: %s (%d bytes copied)", err, length))
+		return fmt.Errorf("saving file: %s (%d bytes copied)", err, length)
 	}
 
 	log("Downloaded %d bytes", length)

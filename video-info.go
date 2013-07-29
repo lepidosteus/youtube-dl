@@ -14,15 +14,15 @@ func getVideoInfo(videoId string) (string, error) {
 	log("Requesting url: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("An error occured while requesting the video information: '%s'", err))
+		return "", fmt.Errorf("An error occured while requesting the video information: '%s'", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", errors.New(fmt.Sprintf("An error occured while requesting the video information: non 200 status code received: '%s'", err))
+		return "", fmt.Errorf("An error occured while requesting the video information: non 200 status code received: '%s'", err)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.New(fmt.Sprintf("An error occured while reading the video information: '%s'", err))
+		return "", fmt.Errorf("An error occured while reading the video information: '%s'", err)
 	}
 	log("Got %d bytes answer", len(body))
 	return string(body), nil
@@ -33,7 +33,7 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 
 	answer, err := url.ParseQuery(response)
 	if err != nil {
-		err = errors.New(fmt.Sprintf("parsing the server's answer: '%s'", err))
+		err = fmt.Errorf("parsing the server's answer: '%s'", err)
 		return
 	}
 
@@ -41,20 +41,20 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 
 	status, ok := answer["status"]
 	if !ok {
-		err = errors.New(fmt.Sprint("no response status found in the server's answer"))
+		err = fmt.Errorf("no response status found in the server's answer")
 		return
 	}
 	if status[0] == "fail" {
 		reason, ok := answer["reason"]
 		if ok {
-			err = errors.New(fmt.Sprintf("'fail' response status found in the server's answer, reason: '%s'", reason[0]))
+			err = fmt.Errorf("'fail' response status found in the server's answer, reason: '%s'", reason[0])
 		} else {
 			err = errors.New(fmt.Sprint("'fail' response status found in the server's answer, no reason given"))
 		}
 		return
 	}
 	if status[0] != "ok" {
-		err = errors.New(fmt.Sprintf("non-success response status found in the server's answer (status: '%s')", status))
+		err = fmt.Errorf("non-success response status found in the server's answer (status: '%s')", status)
 		return
 	}
 

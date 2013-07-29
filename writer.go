@@ -4,7 +4,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"errors"
 	"fmt"
 )
 
@@ -29,7 +28,7 @@ func (w *FFMpegWriter) Close() error {
 func getFFmpegWriter(path string) (w *FFMpegWriter, err error) {
 	_, err = exec.LookPath(FFMPEG)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("you need to install ffmpeg to convert to mp3: %s", err))
+		return nil, fmt.Errorf("you need to install ffmpeg to convert to mp3: %s", err)
 	}
 
 	w = &FFMpegWriter{
@@ -48,7 +47,7 @@ func getWriter(cfg *Config, stream stream) (out io.WriteCloser, err error) {
 	path := cfg.OutputPath(stream)
 
 	if _, err = os.Stat(path); err == nil && cfg.overwrite == false {
-		return nil, errors.New(fmt.Sprintf("the destination file '%s' already exists and overwrite set to false", path))
+		return nil, fmt.Errorf("the destination file '%s' already exists and overwrite set to false", path)
 	}
 
 	if cfg.isMp3() {
@@ -60,7 +59,7 @@ func getWriter(cfg *Config, stream stream) (out io.WriteCloser, err error) {
 	}
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("opening destination file: %s", err))
+		return nil, fmt.Errorf("opening destination file: %s", err)
 	}
 
 	log("Destination opened at '%s'", path)
