@@ -203,7 +203,7 @@ func (cfg *Config) selectStream(streams streamList) (stream stream, err error) {
 
 // display usage and quit
 func error_usage() {
-	fmt.Println("usage: youtube-dl [-verbose -mp3 -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
+	fmt.Println("usage: youtube-dl [-verbose -mp3 -audio-bitrate 123 -overwrite -output /p/a/t/h -quality list -format list] videoId|url")
 	flag.PrintDefaults()
 	os.Exit(1)
 }
@@ -258,6 +258,8 @@ func init() {
 	log("\tQuality: %s", strings.Join(cfg.quality.values, ","))
 	log("\tFormat: %s", strings.Join(cfg.format.values, ","))
 	log("\tOutput: %s", cfg.output)
+	log("\tConvert to mp3: %s", cfg.toMp3)
+	log("\tAudio bitrate: %d", cfg.audioBitrate)
 
 	// replace min/max quality by their actual values
 	for idx := len(cfg.quality.values) - 1; idx >= 0; idx = idx - 1 {
