@@ -10,6 +10,12 @@ import (
 	"path/filepath"
 )
 
+var audioBitrates map[uint][]string = map[uint][]string{
+	AUDIO_BITRATE_LOW: []string{QUALITY_SMALL},
+	AUDIO_BITRATE_MEDIUM: []string{QUALITY_MEDIUM, QUALITY_LARGE, QUALITY_UNKNOWN},
+	AUDIO_BITRATE_HIGH: []string{QUALITY_HD720, QUALITY_HD1080, QUALITY_HIGHRES},
+}
+
 var sortedQualities []string = []string{
 	QUALITY_HIGHRES,
 	QUALITY_HD1080,
@@ -80,6 +86,7 @@ type Config struct {
 	format *commaStringList
 	videoId string
 	toMp3 bool
+	audioBitrate uint
 }
 
 var cfg *Config = &Config{
@@ -96,6 +103,7 @@ var cfg *Config = &Config{
 	),
 	"",
 	false,
+	AUDIO_BITRATE_AUTO,
 }
 
 // reads the videoId property and try to find what we need inside
@@ -133,6 +141,25 @@ func (cfg *Config) OutputPath(stream stream) (path string) {
 	path = strings.Replace(cfg.output, "%format%", stream.Format(), -1)
 	path = strings.Replace(path, "%title%", stream["title"], -1)
 	path = strings.Replace(path, "%author%", stream["author"], -1)
+	return
+}
+
+func (cfg *Config) AudioBitrate(stream stream) (audio_bitrate uint) {
+	if cfg.audioBitrate != AUDIO_BITRATE_AUTO {
+		log("Manually set audio bitrate: '%dk'", cfg.audioBitrate)
+		return cfg.audioBitrate
+	}
+	for audio_bitrate, qualities := range audioBitrates {
+		for _, quality := range qualities {
+			if quality == stream.Quality() {
+				log("Auto-detected audio bitrate: '%dk'", audio_bitrate)
+				return audio_bitrate
+			}
+		}
+	}
+
+	audio_bitrate = AUDIO_BITRATE_MEDIUM
+	log("WARNING: not bitrate defined for this quality '%s', defaulting to '%dk'", stream.Quality(), audio_bitrate)
 	return
 }
 
@@ -190,6 +217,8 @@ func init() {
 	flag.BoolVar(&cfg.overwrite, "overwrite", false, "if true, the destination file will be overwritten if it already exists.")
 
 	flag.StringVar(&cfg.output, "output", "", "path where to write the downloaded file. Use %format% for dynamic extension depending on format selected (eg: -output 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected). %author% and %title% will be replaced by the uploader's name and the video's title, respectively. Use the .mp3 extension to convert the video to an mp3 file on the fly (eg: -ouput 'audio.mp3').")
+
+	flag.UintVar(&cfg.audioBitrate, "audio-bitrate", AUDIO_BITRATE_AUTO, "The bitrate to use for audio files when converting to mp3. If set to " + fmt.Sprintf("%d", AUDIO_BITRATE_AUTO) + " (which is the default) the bitrate will be set automatically depending on the quality of the downloaded video file.")
 
 	flag.Var(cfg.quality, "quality", "comma separated list of desired video quality, in decreasing priority. Use 'max' (or 'min') to automatically select the best (or worst) possible quality available for this video. Allowed values: " + strings.Join(sortedQualities, ", ") + ". Exemple: '-quality hd720,max': select hd720 quality, if not available then select the best quality available.")
 

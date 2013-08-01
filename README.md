@@ -12,19 +12,6 @@ Your can then start using it using youtube-dl
 
     youtube-dl http://www.youtube.com/watch?v=xjfsmKmK9qc
 
-Video ID detection
-------------------
-
-The parsing tries to be smart about finding out what the video's ID is, you can give it an url, an id, an embed code fragment, ... And it will do its best.
-
-MP3 convertion
---------------
-
-If ffmpeg is installed, it is possible to extract the audio stream to an mp3 file on the fly. Either pass the -mp3 parameter, or give an output path ending in .mp3
-
-    youtube-dl -mp3 http://www.youtube.com/watch?v=xjfsmKmK9qc
-
-    youtube-dl -output "audio.mp3" http://www.youtube.com/watch?v=xjfsmKmK9qc
 
 Automatic naming
 ----------------
@@ -58,6 +45,20 @@ This, however, will work and download the video in the next best quality (medium
 
     youtube-dl -output learning_go.mp4 -quality hd720,max -format mp4 xjfsmKmK9qc
 
+Video ID detection
+------------------
+
+The parsing tries to be smart about finding out what the video's ID is, you can give it an url, an id, an embed code fragment, ... And it will do its best.
+
+MP3 convertion
+--------------
+
+If ffmpeg is installed, it is possible to extract the audio stream to an mp3 file on the fly. Either pass the -mp3 parameter, or give an output path ending in .mp3
+
+    youtube-dl -mp3 http://www.youtube.com/watch?v=xjfsmKmK9qc
+
+    youtube-dl -output "audio.mp3" http://www.youtube.com/watch?v=xjfsmKmK9qc
+
 Parameters
 ----------
 
@@ -82,6 +83,12 @@ Parameters
   </tr>
   <tr>
     <td colspan="4">if true, the file's audio stream will be converted to an mp3 file</td>
+  </tr>
+  <tr>
+    <td>-audio-bitrate</td><td>-audio-bitrate 0<td>0<br />any positive number</td><td>-audio-bitrate 128</td>
+  </tr>
+  <tr>
+    <td colspan="4">The bitrate to use for audio files when converting to mp3. If set to 0 (which is the default) the bitrate will be set automatically depending on the quality of the downloaded video file</td>
   </tr>
   <tr>
     <td>-output VALUE</td><td>./video.%format%</td><td>a valid path<br>Tokens:<br>%format%<br>%author%<br>%title%</td><td>-output "$HOME/funny_video.%format%"

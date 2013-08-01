@@ -25,14 +25,14 @@ func (w *FFMpegWriter) Close() error {
 	return w.cmd.Wait()
 }
 
-func getFFmpegWriter(path string) (w *FFMpegWriter, err error) {
+func getFFmpegWriter(path string, audio_bitrate uint) (w *FFMpegWriter, err error) {
 	_, err = exec.LookPath(FFMPEG)
 	if err != nil {
 		return nil, fmt.Errorf("you need to install ffmpeg to convert to mp3: %s", err)
 	}
 
 	w = &FFMpegWriter{
-		exec.Command(FFMPEG, "-i", "-", path),
+		exec.Command(FFMPEG, "-i", "-", "-ab", fmt.Sprintf("%dk", audio_bitrate), path),
 		nil,
 	}
 	w.stdin, err = w.cmd.StdinPipe()
@@ -52,7 +52,7 @@ func getWriter(cfg *Config, stream stream) (out io.WriteCloser, err error) {
 
 	if cfg.isMp3() {
 		fmt.Printf("Converting video to mp3 file at '%s' ...\n", path)
-		out, err = getFFmpegWriter(path)
+		out, err = getFFmpegWriter(path, cfg.AudioBitrate(stream))
 	} else {
 		fmt.Printf("Downloading video to disk at '%s' ...\n", path)
 		out, err = os.Create(path)
