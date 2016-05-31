@@ -93,7 +93,7 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			log(fmt.Sprintf("An error occured while decoding one of the video's stream's information: stream %d: %s\n", stream_pos, err))
 			continue
 		}
-		err = ensureFields(stream_qry, []string{"quality", "type", "url", "sig"})
+		err = ensureFields(stream_qry, []string{"quality", "type", "url"})
 		if err != nil {
 			log(fmt.Sprintf("Missing fields in one of the video's stream's information: stream %d: %s\n", stream_pos, err))
 			continue
@@ -105,10 +105,15 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			"quality": stream_qry["quality"][0],
 			"type": stream_qry["type"][0],
 			"url": stream_qry["url"][0],
-			"sig": stream_qry["sig"][0],
+			"sig": "",
 			"title": answer["title"][0],
 			"author": answer["author"][0],
 		}
+		
+		if sig, exists := stream_qry["sig"]; exists {
+			stream["sig"] = sig[0]
+		}
+		
 		streams = append(streams, stream)
 
 		quality := stream.Quality()
