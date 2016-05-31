@@ -28,6 +28,15 @@ func getVideoInfo(videoId string) (string, error) {
 	return string(body), nil
 }
 
+func ensureFields(source url.Values, fields []string) (err error) {
+	for _, field := range fields {
+		if _, exists := source[field]; !exists {
+			return fmt.Errorf("Field '%s' is missing in url.Values source", field)
+		}
+	}
+	return nil
+}
+
 func decodeVideoInfo(response string) (streams streamList, err error) {
 	// decode
 
@@ -39,11 +48,13 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 
 	// check the status
 
-	status, ok := answer["status"]
-	if !ok {
-		err = fmt.Errorf("no response status found in the server's answer")
+	err = ensureFields(answer, []string{"status", "url_encoded_fmt_stream_map", "title", "author"})
+	if err != nil {
+		err = fmt.Errorf("Missing fields in the server's answer: '%s'", err)
 		return
 	}
+
+	status := answer["status"]
 	if status[0] == "fail" {
 		reason, ok := answer["reason"]
 		if ok {
@@ -68,11 +79,7 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 
 	// read the streams map
 
-	stream_map, ok := answer["url_encoded_fmt_stream_map"]
-	if !ok {
-		err = errors.New(fmt.Sprint("no stream map found in the server's answer"))
-		return
-	}
+	stream_map := answer["url_encoded_fmt_stream_map"]
 
 	// read each stream
 
@@ -86,6 +93,14 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			log(fmt.Sprintf("An error occured while decoding one of the video's stream's information: stream %d: %s\n", stream_pos, err))
 			continue
 		}
+		err = ensureFields(stream_qry, []string{"quality", "type", "url", "sig"})
+		if err != nil {
+			log(fmt.Sprintf("Missing fields in one of the video's stream's information: stream %d: %s\n", stream_pos, err))
+			continue
+		}
+		/* dumps the raw streams
+		log(fmt.Sprintf("%v\n", stream_qry))
+		*/
 		stream := stream{
 			"quality": stream_qry["quality"][0],
 			"type": stream_qry["type"][0],
