@@ -110,7 +110,11 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			"author": answer["author"][0],
 		}
 		
-		if sig, exists := stream_qry["sig"]; exists {
+		if sig, exists := stream_qry["sig"]; exists { // old one
+			stream["sig"] = sig[0]
+		}
+		
+		if sig, exists := stream_qry["s"]; exists { // now they use this
 			stream["sig"] = sig[0]
 		}
 		

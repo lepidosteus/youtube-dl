@@ -3,6 +3,11 @@ youtube-dl
 
 Go tool to download videos from youtube, with quality and format selection
 
+**NOTE**: YouTube has changed their code so that url's signature need to be deciphered, and they rotate the ciphering code quite often. As such, this tool won't be able to download the video files anymore.
+
+Since I'm not actively using it I won't bother working around it (the ciphering code is in youtube js player file).
+If you need to download youtube videos, I recommend https://rg3.github.io/youtube-dl/
+
 Install
 -------
 
