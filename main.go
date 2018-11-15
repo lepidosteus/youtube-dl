@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 )
 
 const (
@@ -50,11 +52,17 @@ func main() {
 	}
 
 	if cfg.audioOnly == true {
-		stream, err := getAudioData(response)
+		resp, err := getAudioData(response)
 		if err != nil {
 			fmt.Printf("ERROR: unable to retrieve audio file from response: %s\n", err)
 			return
 		}
+		defer resp.Body.Close()
+
+		if _, err := io.Copy(os.Stdout, resp.Body); err != nil {
+			fmt.Fprintf(os.Stdout, "Error occurred during data streaming")
+		}
+
 	} else {
 
 		streams, err := decodeVideoInfo(response)
@@ -69,24 +77,23 @@ func main() {
 			return
 		}
 
-	}
-
-	out, err := getWriter(cfg, stream)
-	if err != nil {
-		fmt.Printf("ERROR: unable to create the output writer: %s\n", err)
-		return
-	}
-	defer func() {
-		err = out.Close()
+		out, err := getWriter(cfg, stream)
 		if err != nil {
-			fmt.Printf("ERROR: unable to close destination: %s\n", err)
+			fmt.Printf("ERROR: unable to create the output writer: %s\n", err)
+			return
 		}
-	}()
+		defer func() {
+			err = out.Close()
+			if err != nil {
+				fmt.Printf("ERROR: unable to close destination: %s\n", err)
+			}
+		}()
 
-	err = stream.download(out)
-	if err != nil {
-		fmt.Printf("ERROR: unable to download the stream: %s\n", err)
-		return
+		err = stream.download(out)
+		if err != nil {
+			fmt.Printf("ERROR: unable to download the stream: %s\n", err)
+			return
+		}
 	}
 
 	fmt.Printf("Done\n")

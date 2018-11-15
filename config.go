@@ -222,7 +222,7 @@ func init() {
 
 	flag.UintVar(&cfg.audioBitrate, "audio-bitrate", AUDIO_BITRATE_AUTO, "The bitrate to use for audio files when converting to mp3. If set to "+fmt.Sprintf("%d", AUDIO_BITRATE_AUTO)+" (which is the default) the bitrate will be set automatically depending on the quality of the downloaded video file.")
 
-	flag.BoolVar(&cfg.audioOnly, "audio Only", false, "if true, it will only download the audio file in .m4a format.")
+	flag.BoolVar(&cfg.audioOnly, "audio-only", false, "if true, it will only download the audio file in .m4a format.")
 
 	flag.Var(cfg.quality, "quality", "comma separated list of desired video quality, in decreasing priority. Use 'max' (or 'min') to automatically select the best (or worst) possible quality available for this video. Allowed values: "+strings.Join(sortedQualities, ", ")+". Exemple: '-quality hd720,max': select hd720 quality, if not available then select the best quality available.")
 

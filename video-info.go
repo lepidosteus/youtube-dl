@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
+	"regexp"
 	"strings"
 )
 
@@ -39,23 +39,67 @@ func ensureFields(source url.Values, fields []string) (err error) {
 	return nil
 }
 
-func getAudioFile(response string) (stream stream, err error) {
+func getAudioData(response string) (resp *http.Response, err error) {
 	answer, err := url.ParseQuery(response)
+	if err != nil {
+		err = fmt.Errorf("aaww snap, the server's answer: '%v'", err)
+		return
+	}
+	err = ensureFields(answer, []string{"status", "player_response"})
+	if err != nil {
+		err = fmt.Errorf("Missing fields in the server's answer: '%s'", err)
+		return
+	}
+
+	status := answer["status"]
+	if status[0] == "fail" {
+		reason, ok := answer["reason"]
+		if ok {
+			err = fmt.Errorf("'fail' response status found in the server's answer, reason: '%s'", reason[0])
+		} else {
+			err = errors.New(fmt.Sprint("'fail' response status found in the server's answer, no reason given"))
+		}
+		return
+	}
+	if status[0] != "ok" {
+		err = fmt.Errorf("non-success response status found in the server's answer (status: '%s')", status)
+		return
+	}
+	log("Server answered with a success code")
+
+	var URLm4a string
+
+	// Getting the m4a url using regexp
+	playerResponse := answer["player_response"]
+	PResponseList := strings.Split(playerResponse[0], `},{`)
+	for _, ListItem := range PResponseList {
+		matched, _ := regexp.MatchString(`"itag":140`, ListItem)
+		if matched {
+			re := regexp.MustCompile(`https:\/\/[^"]+`)
+			urls := re.FindStringSubmatch(ListItem)
+			URLm4a = strings.Replace(urls[0], `\u0026`, "&", -1)
+			break
+		}
+	}
+
+	resp, err = http.Get(URLm4a)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+
 }
 
 func decodeVideoInfo(response string) (streams streamList, err error) {
 	// decode
 
 	answer, err := url.ParseQuery(response)
-	fmt.Println("answer", answer)
 
 	if err != nil {
 		err = fmt.Errorf("parsing the server's answer: '%s'", err)
 		return
 	}
-	Writer, _ := os.Create("./answer")
-	fmt.Fprintf(Writer, response)
-	// check the status
 
 	err = ensureFields(answer, []string{"status", "url_encoded_fmt_stream_map", "title", "author"})
 	if err != nil {
@@ -89,11 +133,10 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 	// read the streams map
 
 	stream_map := answer["url_encoded_fmt_stream_map"]
-
 	// read each stream
 
 	streams_list := strings.Split(stream_map[0], ",")
-		// Stream list is []string and inside got url=    &quality=  &type=
+	// Stream list is []string and inside got url=    &quality=  &type=
 	log("Found %d streams in answer", len(streams_list))
 	log("stream list:", streams_list)
 
