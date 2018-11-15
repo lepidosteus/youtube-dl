@@ -1,19 +1,19 @@
 package main
 
 import (
-	"flag"
-	"regexp"
 	"errors"
-	"strings"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 var audioBitrates map[uint][]string = map[uint][]string{
-	AUDIO_BITRATE_LOW: []string{QUALITY_SMALL},
+	AUDIO_BITRATE_LOW:    []string{QUALITY_SMALL},
 	AUDIO_BITRATE_MEDIUM: []string{QUALITY_MEDIUM, QUALITY_LARGE, QUALITY_UNKNOWN},
-	AUDIO_BITRATE_HIGH: []string{QUALITY_HD720, QUALITY_HD1080, QUALITY_HIGHRES},
+	AUDIO_BITRATE_HIGH:   []string{QUALITY_HD720, QUALITY_HD1080, QUALITY_HIGHRES},
 }
 
 var sortedQualities []string = []string{
@@ -27,10 +27,10 @@ var sortedQualities []string = []string{
 }
 
 var formatsTrigger map[string]string = map[string]string{
-	FORMAT_MP4: "video/mp4",
-	FORMAT_FLV: "video/x-flv",
+	FORMAT_MP4:  "video/mp4",
+	FORMAT_FLV:  "video/x-flv",
 	FORMAT_WEBM: "video/webm",
-	FORMAT_3GP: "video/3gpp",
+	FORMAT_3GP:  "video/3gpp",
 }
 
 var sortedFormats []string = []string{
@@ -44,7 +44,7 @@ var sortedFormats []string = []string{
 // comma delimited parameters
 
 type commaStringList struct {
-	values []string
+	values  []string
 	allowed map[string]struct{}
 }
 
@@ -79,13 +79,14 @@ func CreateCommaStringList(values []string, allowed []string) *commaStringList {
 // our config struct
 
 type Config struct {
-	verbose bool
-	output string	// path
-	overwrite bool
-	quality *commaStringList
-	format *commaStringList
-	videoId string
-	toMp3 bool
+	verbose      bool
+	output       string // path
+	overwrite    bool
+	quality      *commaStringList
+	format       *commaStringList
+	videoId      string
+	toMp3        bool
+	audioOnly    bool
 	audioBitrate uint
 }
 
@@ -102,6 +103,7 @@ var cfg *Config = &Config{
 		sortedFormats,
 	),
 	"",
+	false,
 	false,
 	AUDIO_BITRATE_AUTO,
 }
@@ -218,11 +220,13 @@ func init() {
 
 	flag.StringVar(&cfg.output, "output", "", "path where to write the downloaded file. Use %format% for dynamic extension depending on format selected (eg: -output 'video.%format%' would be written as 'video.mp4' if the mp4 format is selected). %author% and %title% will be replaced by the uploader's name and the video's title, respectively. Use the .mp3 extension to convert the video to an mp3 file on the fly (eg: -ouput 'audio.mp3').")
 
-	flag.UintVar(&cfg.audioBitrate, "audio-bitrate", AUDIO_BITRATE_AUTO, "The bitrate to use for audio files when converting to mp3. If set to " + fmt.Sprintf("%d", AUDIO_BITRATE_AUTO) + " (which is the default) the bitrate will be set automatically depending on the quality of the downloaded video file.")
+	flag.UintVar(&cfg.audioBitrate, "audio-bitrate", AUDIO_BITRATE_AUTO, "The bitrate to use for audio files when converting to mp3. If set to "+fmt.Sprintf("%d", AUDIO_BITRATE_AUTO)+" (which is the default) the bitrate will be set automatically depending on the quality of the downloaded video file.")
 
-	flag.Var(cfg.quality, "quality", "comma separated list of desired video quality, in decreasing priority. Use 'max' (or 'min') to automatically select the best (or worst) possible quality available for this video. Allowed values: " + strings.Join(sortedQualities, ", ") + ". Exemple: '-quality hd720,max': select hd720 quality, if not available then select the best quality available.")
+	flag.BoolVar(&cfg.audioOnly, "audio Only", false, "if true, it will only download the audio file in .m4a format.")
 
-	flag.Var(cfg.format, "format", "comma separated list of desired video format, in decreasing priority. Allowed values: " + strings.Join(sortedFormats, ", ") + ".")
+	flag.Var(cfg.quality, "quality", "comma separated list of desired video quality, in decreasing priority. Use 'max' (or 'min') to automatically select the best (or worst) possible quality available for this video. Allowed values: "+strings.Join(sortedQualities, ", ")+". Exemple: '-quality hd720,max': select hd720 quality, if not available then select the best quality available.")
+
+	flag.Var(cfg.format, "format", "comma separated list of desired video format, in decreasing priority. Allowed values: "+strings.Join(sortedFormats, ", ")+".")
 
 	flag.Parse()
 
@@ -235,16 +239,16 @@ func init() {
 			cfg.output = DEFAULT_DESTINATION
 		}
 		log("No output specified, defaulting to '%s'", cfg.output)
-	} else if (filepath.Ext(cfg.output) == ".mp3") {
+	} else if filepath.Ext(cfg.output) == ".mp3" {
 		// if a path is given and its for a mp3, make sure to convert
 
 		cfg.toMp3 = true
 		log("Converting video to mp3 due to output parameter")
-	} else if (filepath.Ext(cfg.output) == ".%format%" && cfg.toMp3) {
+	} else if filepath.Ext(cfg.output) == ".%format%" && cfg.toMp3 {
 		// if a path is given, and its a dynamic extension, and we asked for mp3, change path now
 		cfg.output = cfg.output[:len(cfg.output)-8] + "mp3"
 		log("Replacing output with '%s' due to parameters", cfg.output)
-	} else if (filepath.Ext(cfg.output) != ".mp3" && cfg.toMp3) {
+	} else if filepath.Ext(cfg.output) != ".mp3" && cfg.toMp3 {
 		// if we ask for mp3 but the output we gave doesn't have it, append it
 
 		cfg.output = cfg.output + ".mp3"
@@ -268,7 +272,7 @@ func init() {
 			plug := append([]string{}, sortedQualities...)
 			if quality == QUALITY_MIN {
 				// reverse the order
-				for i, j := 0, len(plug) - 1; i < j; i, j = i + 1, j - 1 {
+				for i, j := 0, len(plug)-1; i < j; i, j = i+1, j-1 {
 					plug[i], plug[j] = plug[j], plug[i]
 				}
 			}
@@ -276,7 +280,7 @@ func init() {
 				cfg.quality.values[:idx],
 				append(
 					plug,
-					cfg.quality.values[idx + 1:]...,
+					cfg.quality.values[idx+1:]...,
 				)...,
 			)
 		}
@@ -293,13 +297,3 @@ func init() {
 
 	log("\tVideo: %s", cfg.videoId)
 }
-
-
-
-
-
-
-
-
-
-

@@ -1,11 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"errors"
-	"net/url"
-	"net/http"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
+	"os"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ func getVideoInfo(videoId string) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("An error occured while requesting the video information: non 200 status code received: '%s'", err)
 	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("An error occured while reading the video information: '%s'", err)
@@ -37,15 +39,22 @@ func ensureFields(source url.Values, fields []string) (err error) {
 	return nil
 }
 
+func getAudioFile(response string) (stream stream, err error) {
+	answer, err := url.ParseQuery(response)
+}
+
 func decodeVideoInfo(response string) (streams streamList, err error) {
 	// decode
 
 	answer, err := url.ParseQuery(response)
+	fmt.Println("answer", answer)
+
 	if err != nil {
 		err = fmt.Errorf("parsing the server's answer: '%s'", err)
 		return
 	}
-
+	Writer, _ := os.Create("./answer")
+	fmt.Fprintf(Writer, response)
 	// check the status
 
 	err = ensureFields(answer, []string{"status", "url_encoded_fmt_stream_map", "title", "author"})
@@ -72,9 +81,9 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 	log("Server answered with a success code")
 
 	/*
-	for k, v := range answer {
-		log("%s: %#v", k, v)
-	}
+		for k, v := range answer {
+			log("%s: %#v", k, v)
+		}
 	*/
 
 	// read the streams map
@@ -84,8 +93,9 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 	// read each stream
 
 	streams_list := strings.Split(stream_map[0], ",")
-
+		// Stream list is []string and inside got url=    &quality=  &type=
 	log("Found %d streams in answer", len(streams_list))
+	log("stream list:", streams_list)
 
 	for stream_pos, stream_raw := range streams_list {
 		stream_qry, err := url.ParseQuery(stream_raw)
@@ -103,21 +113,20 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 		*/
 		stream := stream{
 			"quality": stream_qry["quality"][0],
-			"type": stream_qry["type"][0],
-			"url": stream_qry["url"][0],
-			"sig": "",
-			"title": answer["title"][0],
-			"author": answer["author"][0],
+			"type":    stream_qry["type"][0],
+			"url":     stream_qry["url"][0],
+			"sig":     "",
+			"title":   answer["title"][0],
+			"author":  answer["author"][0],
 		}
-		
 		if sig, exists := stream_qry["sig"]; exists { // old one
 			stream["sig"] = sig[0]
 		}
-		
+
 		if sig, exists := stream_qry["s"]; exists { // now they use this
 			stream["sig"] = sig[0]
 		}
-		
+
 		streams = append(streams, stream)
 
 		quality := stream.Quality()
