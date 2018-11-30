@@ -11,7 +11,7 @@ import (
 )
 
 func getVideoInfo(videoId string) (string, error) {
-	url := "http://youtube.com/get_video_info?video_id=" + videoId
+	url := "http://youtube.com/get_video_info?hl=en_US&el=detailpage&video_id=" + videoId
 	log("Requesting url: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -152,8 +152,8 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			continue
 		}
 		/* dumps the raw streams
-		log(fmt.Sprintf("%v\n", stream_qry))
 		*/
+		log(fmt.Sprintf("%v\n", stream_qry))
 		stream := stream{
 			"quality": stream_qry["quality"][0],
 			"type":    stream_qry["type"][0],

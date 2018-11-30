@@ -94,9 +94,8 @@ func main() {
 			fmt.Printf("ERROR: unable to download the stream: %s\n", err)
 			return
 		}
+		fmt.Printf("Done\n")
 	}
-
-	fmt.Printf("Done\n")
 
 	return
 }
