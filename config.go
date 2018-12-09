@@ -288,10 +288,10 @@ func init() {
 
 	log("\tExtended quality: %s", strings.Join(cfg.quality.values, ","))
 
-	if flag.NArg() != 1 {
-		fmt.Println("ERROR: no videoId or url given")
-		error_usage()
-	}
+	// if flag.NArg() != 1 {
+	// 	fmt.Println("ERROR: no videoId or url given")
+	// 	error_usage()
+	// }
 
 	cfg.videoId = flag.Arg(0)
 

@@ -2,11 +2,27 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"testing"
 )
+
+func ErrChecker(t *testing.T, ErrMsg string, err error) {
+	if err != nil {
+		t.Fatalf("%s: %v", ErrMsg, err)
+	}
+}
+
+func Equals(t *testing.T, myanswer, expected string) {
+	if myanswer != expected {
+		t.Errorf("Expected %s but get %s", myanswer, expected)
+	}
+}
+func NotEquals(t *testing.T, myanswer, expected string) {
+	if myanswer == expected {
+		t.Errorf("Expected %s but get %s", myanswer, expected)
+	}
+}
 
 func TestGetVideoInfo(t *testing.T) {
 	oldArgs := os.Args
@@ -23,12 +39,8 @@ func TestGetVideoInfo(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			returnedBody, err := getVideoInfo(tc.value)
-			if err != nil {
-				t.Errorf("error during request: %v", err)
-			}
-			if returnedBody != tc.expected {
-				t.Errorf("expected %v but get %v", tc.expected, returnedBody)
-			}
+			ErrChecker(t, "Error Getting video Info", err)
+			NotEquals(t, returnedBody, tc.expected)
 		})
 	}
 }
@@ -60,14 +72,12 @@ func TestGetAudioData(t *testing.T) {
 				t.Errorf("error during request: %v", err)
 			}
 
-			responseAudio, err := getAudioData(resp)
-			if err != nil {
-				t.Errorf("error getting Audio Data: %v", err)
-			}
+			_, err = getAudioData(resp)
+			ErrChecker(t, "Error getting audio data", err)
 
 			// normally should not be problem streaming data to file
-			file, _ := os.Create("./testAudioDataFile")
-			io.Copy(file, responseAudio.Body)
+			// file, _ := os.Create("./testAudioDataFile")
+			// io.Copy(file, responseAudio.Body)
 		})
 	}
 }
