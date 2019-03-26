@@ -1,16 +1,17 @@
 package main
 
 import (
-	"fmt"
 	"errors"
-	"net/url"
-	"net/http"
+	"fmt"
 	"io/ioutil"
+	"net/http"
+	"net/url"
+	"regexp"
 	"strings"
 )
 
 func getVideoInfo(videoId string) (string, error) {
-	url := "http://youtube.com/get_video_info?video_id=" + videoId
+	url := "http://youtube.com/get_video_info?hl=en_US&el=detailpage&video_id=" + videoId
 	log("Requesting url: %s", url)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -20,6 +21,7 @@ func getVideoInfo(videoId string) (string, error) {
 	if resp.StatusCode != 200 {
 		return "", fmt.Errorf("An error occured while requesting the video information: non 200 status code received: '%s'", err)
 	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("An error occured while reading the video information: '%s'", err)
@@ -37,16 +39,67 @@ func ensureFields(source url.Values, fields []string) (err error) {
 	return nil
 }
 
+func getAudioData(response string) (resp *http.Response, err error) {
+	answer, err := url.ParseQuery(response)
+	if err != nil {
+		err = fmt.Errorf("aaww snap, the server's answer: '%v'", err)
+		return
+	}
+	err = ensureFields(answer, []string{"status", "player_response"})
+	if err != nil {
+		err = fmt.Errorf("Missing fields in the server's answer: '%s'", err)
+		return
+	}
+
+	status := answer["status"]
+	if status[0] == "fail" {
+		reason, ok := answer["reason"]
+		if ok {
+			err = fmt.Errorf("'fail' response status found in the server's answer, reason: '%s'", reason[0])
+		} else {
+			err = errors.New(fmt.Sprint("'fail' response status found in the server's answer, no reason given"))
+		}
+		return
+	}
+	if status[0] != "ok" {
+		err = fmt.Errorf("non-success response status found in the server's answer (status: '%s')", status)
+		return
+	}
+	log("Server answered with a success code")
+
+	var URLm4a string
+
+	// Getting the m4a url using regexp
+	playerResponse := answer["player_response"]
+	PResponseList := strings.Split(playerResponse[0], `},{`)
+	for _, ListItem := range PResponseList {
+		matched, _ := regexp.MatchString(`"itag":140`, ListItem)
+		if matched {
+			re := regexp.MustCompile(`https:\/\/[^"]+`)
+			urls := re.FindStringSubmatch(ListItem)
+			URLm4a = strings.Replace(urls[0], `\u0026`, "&", -1)
+			break
+		}
+	}
+
+	resp, err = http.Get(URLm4a)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+
+}
+
 func decodeVideoInfo(response string) (streams streamList, err error) {
 	// decode
 
 	answer, err := url.ParseQuery(response)
+
 	if err != nil {
 		err = fmt.Errorf("parsing the server's answer: '%s'", err)
 		return
 	}
-
-	// check the status
 
 	err = ensureFields(answer, []string{"status", "url_encoded_fmt_stream_map", "title", "author"})
 	if err != nil {
@@ -72,20 +125,20 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 	log("Server answered with a success code")
 
 	/*
-	for k, v := range answer {
-		log("%s: %#v", k, v)
-	}
+		for k, v := range answer {
+			log("%s: %#v", k, v)
+		}
 	*/
 
 	// read the streams map
 
 	stream_map := answer["url_encoded_fmt_stream_map"]
-
 	// read each stream
 
 	streams_list := strings.Split(stream_map[0], ",")
-
+	// Stream list is []string and inside got url=    &quality=  &type=
 	log("Found %d streams in answer", len(streams_list))
+	log("stream list:", streams_list)
 
 	for stream_pos, stream_raw := range streams_list {
 		stream_qry, err := url.ParseQuery(stream_raw)
@@ -99,25 +152,24 @@ func decodeVideoInfo(response string) (streams streamList, err error) {
 			continue
 		}
 		/* dumps the raw streams
-		log(fmt.Sprintf("%v\n", stream_qry))
 		*/
+		log(fmt.Sprintf("%v\n", stream_qry))
 		stream := stream{
 			"quality": stream_qry["quality"][0],
-			"type": stream_qry["type"][0],
-			"url": stream_qry["url"][0],
-			"sig": "",
-			"title": answer["title"][0],
-			"author": answer["author"][0],
+			"type":    stream_qry["type"][0],
+			"url":     stream_qry["url"][0],
+			"sig":     "",
+			"title":   answer["title"][0],
+			"author":  answer["author"][0],
 		}
-		
 		if sig, exists := stream_qry["sig"]; exists { // old one
 			stream["sig"] = sig[0]
 		}
-		
+
 		if sig, exists := stream_qry["s"]; exists { // now they use this
 			stream["sig"] = sig[0]
 		}
-		
+
 		streams = append(streams, stream)
 
 		quality := stream.Quality()
